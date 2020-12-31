@@ -1,7 +1,7 @@
 const puppeteer = require('puppeteer-extra');
 const UserAgent = require('user-agents');
 const pluginStealth = require('puppeteer-extra-plugin-stealth');
-const pageURL = 'https://www.google.com/';
+const { siteLink, searchKeyword, numberOfPages } = require('./keys');
 puppeteer.use(pluginStealth());
 let browser;
 
@@ -9,27 +9,35 @@ const run = () =>
   new Promise(async (resolve, reject) => {
     try {
       browser = await launchBrowser();
-      const page = await launchPage(browser);
-
-      for (let i = 0; i < 50; i++) {
-        const response = await page.goto(pageURL, {
-          timeout: 0,
-          waitUntil: 'networkidle2',
-        });
-        if (response.status() === 403) {
-          console.log('Your ip Blocked by Website...');
-        } else if (response.status() === 404) {
-          console.log('Page Not Found...');
-        } else {
-          console.log(i + 1, ' -- ', response.status());
-          await page.waitForSelector('body');
-          await page.screenshot({ fullPage: true, path: `screenshot${i}.png` });
-        }
-      }
+      const businesses = await fetchBusinesses();
 
       await browser.close();
     } catch (error) {
       console.log(`run error: ${error.stack}`);
+      reject(error);
+    }
+  });
+
+const fetchBusinesses = () =>
+  new Promise(async (resolve, reject) => {
+    try {
+      console.log(`Navigating to ${siteLink}`);
+      const page = await launchPage(browser);
+      await page.goto(siteLink, { timeout: 0, waitUntil: 'load' });
+      await page.waitForSelector('input#searchboxinput');
+      console.log(`Typing Keyword [${searchKeyword}]`);
+      await page.type('input#searchboxinput', searchKeyword, { delay: 50 });
+      await page.keyboard.press('Enter');
+      await page.waitForTimeout(3000);
+      await page.waitForSelector(
+        '.section-layout.section-scrollbox.scrollable-y[aria-label]'
+      );
+      console.log('Taking screenshot');
+      await page.screenshot({ path: 'screenshot.png' });
+      await page.close();
+      resolve(true);
+    } catch (error) {
+      console.log(`fetchBusinesses error: ${error}`);
       reject(error);
     }
   });
