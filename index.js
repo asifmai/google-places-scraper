@@ -23,7 +23,8 @@ const fetchBusinesses = () =>
     try {
       console.log(`Navigating to ${siteLink}`);
       const page = await launchPage(browser);
-      await page.goto(siteLink, { timeout: 0, waitUntil: 'load' });
+      await page.goto(siteLink, { timeout: 0, waitUntil: 'networkidle2' });
+      await page.screenshot({ path: 'screenshot.png' });
       await page.waitForSelector('input#searchboxinput');
       console.log(`Typing Keyword [${searchKeyword}]`);
       await page.type('input#searchboxinput', searchKeyword, { delay: 50 });
@@ -33,7 +34,6 @@ const fetchBusinesses = () =>
         '.section-layout.section-scrollbox.scrollable-y[aria-label]'
       );
       console.log('Taking screenshot');
-      await page.screenshot({ path: 'screenshot.png' });
       await page.close();
       resolve(true);
     } catch (error) {
